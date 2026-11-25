@@ -172,4 +172,4 @@ If you lock yourself out of the tools while testing: `docker compose run --rm cl
 
 ## License
 
-Apache 2.0, see [LICENSE](LICENSE).
+GPL-2.0-or-later, like WordPress itself. See [LICENSE](LICENSE) for the GNU General Public License version 2.
