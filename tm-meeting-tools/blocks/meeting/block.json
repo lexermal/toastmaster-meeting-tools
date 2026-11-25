@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "tm-meeting-tools/meeting",
+	"title": "Meeting agenda and tools",
+	"category": "widgets",
+	"icon": "clock",
+	"description": "Agenda of a Toastmasters meeting with tabs for the timer, Ah-Counter, evaluations and audience feedback.",
+	"textdomain": "tm-meeting-tools",
+	"attributes": {
+		"meetingId": { "type": "number", "default": 0 }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "tmmt-blocks-editor",
+	"style": "tmmt-front"
+}

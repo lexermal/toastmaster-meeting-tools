@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "tm-meeting-tools/audience-feedback",
+	"title": "Speech feedback form",
+	"category": "widgets",
+	"icon": "format-chat",
+	"description": "Anonymous audience feedback form for the speakers of a meeting.",
+	"textdomain": "tm-meeting-tools",
+	"attributes": {
+		"meetingId": { "type": "number", "default": 0 }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"editorScript": "tmmt-blocks-editor",
+	"style": "tmmt-front"
+}

@@ -1,0 +1,65 @@
+# Local dev stack for the tm-meeting-tools plugin.
+# Usage:
+#   docker compose up -d
+#   docker compose run --rm cli wp core install --url=http://localhost:8087 ...
+# WordPress: http://localhost:8087  (WP_DEBUG on, log at wp-content/debug.log)
+name: tmmt-dev
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    # The live site runs WordPress 7.0.x, so pin the same minor version.
+    image: wordpress:7.0
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8087:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', true );
+        define( 'SCRIPT_DEBUG', true );
+    volumes:
+      - wp:/var/www/html
+      - ./tm-meeting-tools:/var/www/html/wp-content/plugins/tm-meeting-tools
+
+  cli:
+    image: wordpress:cli
+    profiles: ["cli"]
+    # Same uid as the apache user in the wordpress image so files stay writable.
+    user: "33:33"
+    depends_on:
+      - wordpress
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      HOME: /tmp
+    volumes:
+      - wp:/var/www/html
+      - ./tm-meeting-tools:/var/www/html/wp-content/plugins/tm-meeting-tools
+
+volumes:
+  db:
+  wp:

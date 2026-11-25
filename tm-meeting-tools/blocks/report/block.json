@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "tm-meeting-tools/report",
+	"title": "Meeting results (private)",
+	"category": "widgets",
+	"icon": "chart-bar",
+	"description": "Timings, Ah-Counter results and feedback. Only visible to admins, or on a page protected with a page password.",
+	"textdomain": "tm-meeting-tools",
+	"attributes": {},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"editorScript": "tmmt-blocks-editor",
+	"style": "tmmt-front"
+}
