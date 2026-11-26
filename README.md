@@ -66,7 +66,6 @@ The tools are mobile first and follow the site theme, including dark style varia
 ### Housekeeping
 
 - **Meet and Greet** takes 15 minutes and is the first point on the agenda: the meeting start (from tmclub.eu) is when Meet and Greet begins.
-
 - A meeting is marked **Completed** automatically 30 minutes after its planned end (start time plus all agenda times).
 - **Audience and evaluator feedback is deleted 7 days after it was given** (days set in *Settings*): it is for the speaker to read after the meeting, not to keep. The feedback card shows the date.
 - **Members not seen in a meeting for 60 days are deleted** (days set in *Settings*, checked once a day). Adding a member by hand counts as seeing them.
