@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       TM Meeting Tools
  * Description:       Toastmasters meeting agenda, timekeeper, Ah-Counter and feedback tools. Every action is also exposed through the WordPress Abilities API.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.9
  * Requires PHP:      7.4
  * Author:            Malmo Toastmasters
@@ -15,8 +15,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TMMT_VERSION', '1.0.0' );
-define( 'TMMT_DB_VERSION', '5' );
+define( 'TMMT_VERSION', '1.1.0' );
+define( 'TMMT_DB_VERSION', '6' );
 define( 'TMMT_FILE', __FILE__ );
 define( 'TMMT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TMMT_URL', plugin_dir_url( __FILE__ ) );
@@ -45,6 +45,7 @@ add_action( 'plugins_loaded', array( 'TMMT_Install', 'maybe_upgrade' ) );
 add_action( 'init', 'tmmt_load_textdomain' );
 add_action( 'init', array( 'TMMT_Meetings', 'complete_finished' ) );
 add_action( 'init', array( 'TMMT_Results', 'purge_old_feedback' ) );
+add_action( 'init', array( 'TMMT_Members', 'prune_inactive' ) );
 TMMT_Abilities::init();
 TMMT_Frontend::init();
 if ( is_admin() ) {

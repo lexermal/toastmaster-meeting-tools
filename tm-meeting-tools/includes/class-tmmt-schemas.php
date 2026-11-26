@@ -180,6 +180,25 @@ class TMMT_Schemas {
 	}
 
 	/**
+	 * Club member.
+	 *
+	 * @return array
+	 */
+	public static function member() {
+		return self::obj(
+			array(
+				'id'             => array( 'type' => 'integer' ),
+				'name'           => array( 'type' => 'string' ),
+				'tm_id'          => self::str( 'tmclub.eu (easy-Speak) user ID, empty when not synced.', 0 ),
+				'last_synced_at' => array(
+					'type'        => array( 'string', 'null' ),
+					'description' => 'When the club manager last saw the member in a meeting (site time, Y-m-d H:i:s).',
+				),
+			)
+		);
+	}
+
+	/**
 	 * Timing report row.
 	 *
 	 * @return array

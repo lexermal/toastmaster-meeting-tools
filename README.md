@@ -12,7 +12,7 @@ It was built for [Malmö Toastmasters](https://malmo-tm.infinityfreeapp.com) but
 
 ### On the meeting page (phones)
 
-- **Agenda**: the meeting split into Intro, Speeches, Break, Table Topics and Feedback, with the planned start time of each part. Each prepared speech has a "Give Feedback" button.
+- **Agenda**: the meeting split into Meet and Greet, Introduction, Speeches, Break, Table Topics and Feedback, with the planned start time of each part. Each prepared speech has a "Give Feedback" button.
 - **Timer** (timekeeper):
   - Steps through the timed agenda points, with Previous / Next buttons and a dropdown to jump.
   - Tap to start and stop, with a full-screen green / yellow / red signal and vibration on every colour change. The screen stays awake.
@@ -57,15 +57,19 @@ The tools are mobile first and follow the site theme, including dark style varia
   - the General Evaluator's notes.
 
   Each group of columns can be switched on and off. Below the table, audience feedback is merged into one card per speaker.
-- **Members**: name and Toastmasters ID. The agenda editor's Person field is a dropdown of members.
+- **Members**: name and Toastmasters ID (the tmclub.eu user ID). The agenda editor's Person field is a dropdown of members. The club manager syncs members from tmclub.eu (easy-Speak) every time it sees them in a meeting; the list shows when each member was last synced.
 - **Settings**:
   - Change the shared password for the meeting tools.
+  - How many days members (not seen in a meeting) and feedback are kept before they are deleted.
   - Edit the agenda points: name, category, default green / yellow / red times, whether the timekeeper times them, and their order (drag to change it).
 
 ### Housekeeping
 
+- **Meet and Greet** takes 15 minutes and is the first point on the agenda: the meeting start (from tmclub.eu) is when Meet and Greet begins.
+
 - A meeting is marked **Completed** automatically 30 minutes after its planned end (start time plus all agenda times).
-- **Audience and evaluator feedback is deleted 7 days after it was given**: it is for the speaker to read after the meeting, not to keep. The feedback card shows the date.
+- **Audience and evaluator feedback is deleted 7 days after it was given** (days set in *Settings*): it is for the speaker to read after the meeting, not to keep. The feedback card shows the date.
+- **Members not seen in a meeting for 60 days are deleted** (days set in *Settings*, checked once a day). Adding a member by hand counts as seeing them.
 
 ## Install
 
@@ -117,6 +121,8 @@ Permission: *public* means anyone; *tools* means the tools cookie or an admin; *
 | `submit-feedback` | public with the form nonce (audience); tools (evaluation) | Typed feedback. |
 | `list-feedback`, `delete-feedback`, `get-results` | admin | All feedback and results for a meeting and/or person. |
 
+| `list-members` | admin | Members with Toastmasters ID (tmclub.eu user ID) and when they were last synced. |
+| `sync-members` | admin | Add or update members from tmclub.eu (`{"members": [{"tm_id", "name"}]}`) and mark them as synced now. Matches by Toastmasters ID, then by name among members without one. |
 Example with WP-CLI:
 
 ```bash

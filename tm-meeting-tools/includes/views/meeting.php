@@ -31,11 +31,12 @@ $tmmt_uid  = 'tmmt-' . (int) $meeting['id'];
 			<p class="tmmt-empty"><?php esc_html_e( 'The agenda is not ready yet.', 'tm-meeting-tools' ); ?></p>
 		<?php else : ?>
 			<?php
-			// Sections follow the agenda order: roles before any speech, break or table topic are
-			// the intro, roles after them are the feedback part. Each section shows its planned
+			// Sections follow the agenda order: Meet and Greet is its own section, other roles before
+			// any speech, break or table topic are the introduction, roles after them are the feedback part. Each section shows its planned
 			// start: meeting start plus the max (red) time of everything before it.
 			$tmmt_labels   = array(
-				'intro'       => __( 'Intro', 'tm-meeting-tools' ),
+				'meet_greet'  => __( 'Meet and Greet', 'tm-meeting-tools' ),
+				'intro'       => __( 'Introduction', 'tm-meeting-tools' ),
 				'speech'      => __( 'Speeches', 'tm-meeting-tools' ),
 				'break'       => __( 'Break', 'tm-meeting-tools' ),
 				'table_topic' => __( 'Table Topics', 'tm-meeting-tools' ),
@@ -47,13 +48,12 @@ $tmmt_uid  = 'tmmt-' . (int) $meeting['id'];
 			$tmmt_sections = array();
 			$tmmt_main     = false;
 			foreach ( $meeting['agenda'] as $tmmt_item ) {
-				// Meet and Greet happens before the meeting starts: not part of the public agenda.
-				if ( preg_match( '/meet\s*(and|&)\s*greet/i', $tmmt_item['label'] ) ) {
-					$tmmt_at += $tmmt_item['red_sec'];
-					continue;
+				if ( preg_match( '/meet\s*(and|&)\s*greet/i', $tmmt_item['role_name'] ) ) {
+					$tmmt_key = 'meet_greet';
+				} else {
+					$tmmt_key = isset( $tmmt_labels[ $tmmt_item['category'] ] ) ? $tmmt_item['category'] : ( $tmmt_main ? 'feedback' : 'intro' );
 				}
-				$tmmt_key  = isset( $tmmt_labels[ $tmmt_item['category'] ] ) ? $tmmt_item['category'] : ( $tmmt_main ? 'feedback' : 'intro' );
-				$tmmt_main = $tmmt_main || ! in_array( $tmmt_key, array( 'intro', 'feedback' ), true );
+				$tmmt_main = $tmmt_main || ! in_array( $tmmt_key, array( 'meet_greet', 'intro', 'feedback' ), true );
 				$tmmt_last = end( $tmmt_sections );
 				if ( ! $tmmt_last || $tmmt_last['key'] !== $tmmt_key ) {
 					$tmmt_sections[] = array(
@@ -75,8 +75,9 @@ $tmmt_uid  = 'tmmt-' . (int) $meeting['id'];
 			<?php foreach ( $tmmt_sections as $tmmt_section ) : ?>
 				<div class="tmmt-section tmmt-section--<?php echo esc_attr( $tmmt_section['key'] ); ?>">
 					<h3 class="tmmt-section-head"><span class="tmmt-start"><?php echo esc_html( $tmmt_section['start'] ); ?></span> <?php echo esc_html( $tmmt_labels[ $tmmt_section['key'] ] ); ?></h3>
-					<?php // The heading already says "Break"; an item list would only repeat it. ?>
-					<?php if ( $tmmt_section['items'] && 'break' !== $tmmt_section['key'] ) : ?>
+					<?php // The heading already says "Break" / "Meet and Greet"; an item list would only repeat it, unless someone hosts the Meet and Greet. ?>
+					<?php $tmmt_hosted = 'meet_greet' === $tmmt_section['key'] && '' !== implode( '', wp_list_pluck( $tmmt_section['items'], 'person_name' ) ); ?>
+					<?php if ( $tmmt_section['items'] && ( ! in_array( $tmmt_section['key'], array( 'break', 'meet_greet' ), true ) || $tmmt_hosted ) ) : ?>
 						<ol class="tmmt-agenda">
 							<?php foreach ( $tmmt_section['items'] as $tmmt_item ) : ?>
 								<li class="tmmt-agenda-item tmmt-cat-<?php echo esc_attr( $tmmt_item['category'] ); ?>">

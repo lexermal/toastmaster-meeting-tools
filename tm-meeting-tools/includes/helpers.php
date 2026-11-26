@@ -190,3 +190,21 @@ function tmmt_clean_line( $value, $max = 190 ) {
 function tmmt_clean_text( $value, $max = 5000 ) {
 	return mb_substr( sanitize_textarea_field( (string) $value ), 0, $max );
 }
+
+/**
+ * Days a member may go without being seen in a meeting (club manager sync) before being deleted.
+ *
+ * @return int At least 1.
+ */
+function tmmt_member_inactive_days() {
+	return max( 1, (int) get_option( 'tmmt_member_inactive_days', 60 ) );
+}
+
+/**
+ * Days audience and evaluator feedback is kept.
+ *
+ * @return int At least 1.
+ */
+function tmmt_feedback_keep_days() {
+	return max( 1, (int) get_option( 'tmmt_feedback_keep_days', 7 ) );
+}

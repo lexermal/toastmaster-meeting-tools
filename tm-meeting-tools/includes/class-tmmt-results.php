@@ -371,7 +371,7 @@ class TMMT_Results {
 	}
 
 	/**
-	 * Deletes audience and evaluator feedback 7 days after it was given: it is for the speaker to
+	 * Deletes audience and evaluator feedback some days after it was given (Settings, default 7): it is for the speaker to
 	 * read after the meeting, not to keep. The General Evaluator's notes stay.
 	 * Runs on page loads, at most once an hour.
 	 */
@@ -383,7 +383,7 @@ class TMMT_Results {
 		set_transient( 'tmmt_purge_feedback', 1, HOUR_IN_SECONDS );
 		$table = tmmt_table( 'feedback' );
 		// created_at is stored in site time (current_time( 'mysql' )), so compare in site time too.
-		$cutoff = wp_date( 'Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS );
+		$cutoff = wp_date( 'Y-m-d H:i:s', time() - tmmt_feedback_keep_days() * DAY_IN_SECONDS );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only.
 		$wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE kind IN ('audience', 'evaluation') AND created_at < %s", $cutoff ) );
 	}

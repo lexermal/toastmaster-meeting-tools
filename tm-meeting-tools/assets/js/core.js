@@ -106,13 +106,15 @@
 	}
 
 	/**
-	 * Groups agenda items into the agenda sections (Intro, Speeches, Break, Table Topics, Feedback),
-	 * keeping agenda order. Roles before the first speech/break/table topic are intro, roles after are feedback.
+	 * Groups agenda items into the agenda sections (Meet and Greet, Introduction, Speeches, Break, Table Topics,
+	 * Feedback), keeping agenda order. Roles before the first speech/break/table topic are the introduction,
+	 * roles after are feedback. Same rules as includes/views/meeting.php.
 	 * Returns [ { label, items } ] for the given items only.
 	 */
 	function sections( agenda, items ) {
 		const labels = {
-			intro: __( 'Intro', 'tm-meeting-tools' ),
+			meet_greet: __( 'Meet and Greet', 'tm-meeting-tools' ),
+			intro: __( 'Introduction', 'tm-meeting-tools' ),
 			speech: __( 'Speeches', 'tm-meeting-tools' ),
 			break: __( 'Break', 'tm-meeting-tools' ),
 			table_topic: __( 'Table Topics', 'tm-meeting-tools' ),
@@ -121,8 +123,11 @@
 		const keys = {};
 		let main = false;
 		agenda.forEach( ( i ) => {
-			const key = [ 'speech', 'break', 'table_topic' ].includes( i.category ) ? i.category : main ? 'feedback' : 'intro';
-			main = main || ! [ 'intro', 'feedback' ].includes( key );
+			let key = [ 'speech', 'break', 'table_topic' ].includes( i.category ) ? i.category : main ? 'feedback' : 'intro';
+			if ( /meet\s*(and|&)\s*greet/i.test( i.role_name || '' ) ) {
+				key = 'meet_greet';
+			}
+			main = main || ! [ 'meet_greet', 'intro', 'feedback' ].includes( key );
 			keys[ i.id ] = key;
 		} );
 		const groups = [];

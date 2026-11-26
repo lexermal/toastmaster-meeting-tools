@@ -31,6 +31,10 @@ class TMMT_Install {
 			if ( '1' === $from ) {
 				self::untime_default_roles();
 			}
+			if ( $from && (int) $from < 6 ) {
+				self::stamp_existing_members();
+				self::time_meet_and_greet();
+			}
 		}
 	}
 
@@ -45,6 +49,41 @@ class TMMT_Install {
 				$wpdb->update( tmmt_table( 'role_types' ), array( 'timed' => 0 ), array( 'name' => $r[0] ), array( '%d' ), array( '%s' ) );
 			}
 		}
+	}
+
+	/**
+	 * Version 6 gave Meet and Greet its 15 minutes: the meeting start (from tmclub.eu) is when Meet
+	 * and Greet begins, so with 0 seconds every later start time on the agenda was 15 minutes early.
+	 * Only touches the untouched default (0 seconds).
+	 */
+	private static function time_meet_and_greet() {
+		global $wpdb;
+		$wpdb->update(
+			tmmt_table( 'role_types' ),
+			array(
+				'green_sec'  => 900,
+				'yellow_sec' => 900,
+				'red_sec'    => 900,
+			),
+			array(
+				'name'    => self::default_roles()[0][0],
+				'red_sec' => 0,
+			),
+			array( '%d', '%d', '%d' ),
+			array( '%s', '%d' )
+		);
+	}
+
+	/**
+	 * Version 6 added last_synced_at; members not synced within the configured period are pruned,
+	 * rows with NULL never are. Stamp the existing members with "now" so they get the same grace
+	 * period as everyone else and are removed if the club manager sync never sees them.
+	 */
+	private static function stamp_existing_members() {
+		global $wpdb;
+		$table = tmmt_table( 'members' );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only.
+		$wpdb->query( $wpdb->prepare( "UPDATE $table SET last_synced_at = %s WHERE last_synced_at IS NULL", current_time( 'mysql' ) ) );
 	}
 
 	/**
@@ -74,7 +113,9 @@ class TMMT_Install {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			name varchar(190) NOT NULL,
 			tm_id varchar(30) NOT NULL DEFAULT '',
-			PRIMARY KEY  (id)
+			last_synced_at datetime NULL DEFAULT NULL,
+			PRIMARY KEY  (id),
+			KEY tm_id (tm_id)
 		) $c;";
 
 		$sql[] = 'CREATE TABLE ' . tmmt_table( 'meetings' ) . " (
@@ -165,7 +206,7 @@ class TMMT_Install {
 	 */
 	public static function default_roles() {
 		return array(
-			array( __( 'Meet and Greet', 'tm-meeting-tools' ), 'other', 0, 0, 0, false ),
+			array( __( 'Meet and Greet', 'tm-meeting-tools' ), 'other', 900, 900, 900, false ),
 			array( __( "President's Introduction", 'tm-meeting-tools' ), 'role', 360, 420, 480, true ),
 			array( __( 'Toastmaster', 'tm-meeting-tools' ), 'role', 180, 210, 240, true ),
 			array( __( 'General Evaluator Introduction', 'tm-meeting-tools' ), 'role', 60, 90, 120, true ),

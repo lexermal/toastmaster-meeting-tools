@@ -26,7 +26,7 @@ $err = function ( $r ) {
 wp_set_current_user( 1 );
 
 $roles = $run( 'list-role-types' );
-$ok( ! is_wp_error( $roles ) && count( $roles['role_types'] ) >= 15, 'list-role-types returns seeded roles ' . $err( $roles ) );
+$ok( ! is_wp_error( $roles ) && count( $roles['role_types'] ) >= 14, 'list-role-types returns seeded roles ' . $err( $roles ) );
 $by_name = array();
 foreach ( $roles['role_types'] as $r ) {
 	$by_name[ $r['name'] ] = $r;
@@ -43,9 +43,9 @@ $m = $run(
 		'template'    => 'standard',
 	)
 );
-$ok( ! is_wp_error( $m ) && 20 === count( $m['agenda'] ), 'create-meeting with standard template has 20 items ' . $err( $m ) );
+$ok( ! is_wp_error( $m ) && 19 === count( $m['agenda'] ), 'create-meeting with standard template has 19 items ' . $err( $m ) );
 $mid = $m['id'];
-$ok( 'Speaker 1' === $m['agenda'][7]['label'] && 'Speaker 4' === $m['agenda'][10]['label'], 'numbered labels Speaker 1..4' );
+$ok( 'Speaker 1' === $m['agenda'][6]['label'] && 'Speaker 4' === $m['agenda'][9]['label'], 'numbered labels Speaker 1..4' );
 
 $bad = $run( 'create-meeting', array( 'date' => '2026-02-31' ) );
 $ok( is_wp_error( $bad ), 'invalid date rejected' );
@@ -194,7 +194,13 @@ $fb = $run(
 	)
 );
 $ok( ! is_wp_error( $fb ) && $fb['saved'], 'submit-feedback evaluation ' . $err( $fb ) );
-$lf = $run( 'list-feedback', array( 'person_name' => 'Anna' ) );
+$lf = $run(
+	'list-feedback',
+	array(
+		'meeting_id'  => $mid,
+		'person_name' => 'Anna',
+	)
+);
 $ok( 1 === count( $lf['feedback'] ) && 'Eva' === $lf['feedback'][0]['giver_name'], 'list-feedback by person' );
 
 $res = $run( 'get-results', array( 'meeting_id' => $mid ) );
@@ -307,6 +313,89 @@ $lf = $run(
 	)
 );
 $ok( 1 === count( $lf['feedback'] ) && '' === $lf['feedback'][0]['giver_name'] && 'Anna' === $lf['feedback'][0]['person_name'], 'audience feedback anonymous, person from agenda item' );
+
+// Members: sync from the club manager, list, prune.
+global $wpdb;
+$mt = tmmt_table( 'members' );
+$wpdb->query( "DELETE FROM $mt WHERE name LIKE 'Smoke %'" ); // phpcs:ignore
+$manual = TMMT_Members::create( array( 'name' => 'Smoke Linked' ) );
+$wpdb->update( $mt, array( 'last_synced_at' => '2020-01-01 00:00:00' ), array( 'id' => $manual ) );
+$sy = $run(
+	'sync-members',
+	array(
+		'members' => array(
+			array(
+				'tm_id'          => 'smoke-1',
+				'name'           => 'Smoke New',
+			),
+			array(
+				'tm_id'          => 'smoke-2',
+				'name'           => 'smoke linked',
+			),
+			array(
+				'tm_id'          => '',
+				'name'           => 'Smoke Skipped',
+			),
+		),
+	)
+);
+$ok( ! is_wp_error( $sy ) && 1 === $sy['created'] && 1 === $sy['updated'], 'sync-members creates one, links one by name, skips one ' . $err( $sy ) );
+$by_uid = array();
+foreach ( is_wp_error( $sy ) ? array() : $sy['members'] as $mm ) {
+	$by_uid[ $mm['tm_id'] ] = $mm;
+}
+$ok( isset( $by_uid['smoke-2'] ) && $manual === $by_uid['smoke-2']['id'] && 'smoke linked' === $by_uid['smoke-2']['name'], 'sync-members linked the manual member by name' );
+$ok( isset( $by_uid['smoke-2'] ) && $by_uid['smoke-2']['last_synced_at'] > '2020-01-01 00:00:00', 'sync-members bumped last_synced_at' );
+$new_id = isset( $by_uid['smoke-1'] ) ? $by_uid['smoke-1']['id'] : 0;
+$wpdb->update( $mt, array( 'last_synced_at' => '2020-01-01 00:00:00' ), array( 'id' => $new_id ) );
+$sy = $run(
+	'sync-members',
+	array(
+		'members' => array(
+			array(
+				'tm_id'          => 'smoke-1',
+				'name'           => 'Smoke Renamed',
+			),
+		),
+	)
+);
+$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $mt WHERE id = %d", $new_id ), ARRAY_A ); // phpcs:ignore
+$ok( ! is_wp_error( $sy ) && 0 === $sy['created'] && 1 === $sy['updated'] && 'Smoke Renamed' === $row['name'] && $row['last_synced_at'] > '2020-01-01 00:00:00', 'sync-members updates by tm_id and bumps last_synced_at ' . $err( $sy ) );
+$ok( is_wp_error( $run( 'sync-members', array() ) ), 'sync-members needs members' );
+
+$lm    = $run( 'list-members' );
+$names = is_wp_error( $lm ) ? array() : wp_list_pluck( $lm['members'], 'name' );
+$ok( in_array( 'Smoke Renamed', $names, true ) && array_key_exists( 'last_synced_at', $lm['members'][0] ) && array_key_exists( 'tm_id', $lm['members'][0] ), 'list-members ' . $err( $lm ) );
+
+$old  = TMMT_Members::create( array( 'name' => 'Smoke Old' ) );
+$mid1 = TMMT_Members::create( array( 'name' => 'Smoke Recent' ) );
+$nul  = TMMT_Members::create( array( 'name' => 'Smoke Null' ) );
+$wpdb->update( $mt, array( 'last_synced_at' => wp_date( 'Y-m-d H:i:s', time() - 3 * MONTH_IN_SECONDS ) ), array( 'id' => $old ) );
+$wpdb->update( $mt, array( 'last_synced_at' => wp_date( 'Y-m-d H:i:s', time() - MONTH_IN_SECONDS ) ), array( 'id' => $mid1 ) );
+$wpdb->query( $wpdb->prepare( "UPDATE $mt SET last_synced_at = NULL WHERE id = %d", $nul ) ); // phpcs:ignore
+delete_transient( 'tmmt_prune_members' );
+TMMT_Members::prune_inactive();
+$left = $wpdb->get_col( "SELECT id FROM $mt" ); // phpcs:ignore
+$ok( ! in_array( (string) $old, $left, true ), 'prune_inactive deletes a member synced 3 months ago' );
+$ok( in_array( (string) $mid1, $left, true ) && in_array( (string) $nul, $left, true ), 'prune_inactive keeps 1 month ago and NULL' );
+
+// The deletion period comes from Settings.
+update_option( 'tmmt_member_inactive_days', 10 );
+$wpdb->update( $mt, array( 'last_synced_at' => wp_date( 'Y-m-d H:i:s', time() - 20 * DAY_IN_SECONDS ) ), array( 'id' => $mid1 ) );
+delete_transient( 'tmmt_prune_members' );
+TMMT_Members::prune_inactive();
+$left = $wpdb->get_col( "SELECT id FROM $mt" ); // phpcs:ignore
+$ok( ! in_array( (string) $mid1, $left, true ), 'prune_inactive uses the days from Settings' );
+delete_option( 'tmmt_member_inactive_days' );
+$ok( 60 === tmmt_member_inactive_days() && 7 === tmmt_feedback_keep_days(), 'default deletion periods 60 and 7 days' );
+
+$mg = TMMT_Roles::find_by_name( 'Meet and Greet' );
+$ok( $mg && 900 === (int) $mg['red_sec'], 'Meet and Greet takes 15 minutes' );
+
+wp_set_current_user( 0 );
+$ok( is_wp_error( $run( 'list-members' ) ) && is_wp_error( $run( 'sync-members', array( 'members' => array() ) ) ), 'visitor cannot list or sync members' );
+wp_set_current_user( 1 );
+$wpdb->query( "DELETE FROM $mt WHERE name LIKE 'Smoke %' OR name = 'smoke linked'" ); // phpcs:ignore
 
 $d = $run( 'delete-meeting', array( 'meeting_id' => $mid ) );
 $ok( ! is_wp_error( $d ) && null === TMMT_Meetings::get( $mid ), 'delete-meeting' );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Abilities API registration: meetings, agenda and role types.
+ * Abilities API registration: meetings, agenda, role types and members.
  * Tool abilities (timings, Ah-Counter, feedback, access) live in class-tmmt-abilities-tools.php.
  *
  * Every front-end tool calls these abilities through /wp-abilities/v1/abilities/{name}/run,
@@ -85,6 +85,7 @@ class TMMT_Abilities {
 		self::register_meetings();
 		self::register_agenda();
 		self::register_roles();
+		self::register_members();
 		TMMT_Abilities_Tools::register();
 	}
 
@@ -405,6 +406,60 @@ class TMMT_Abilities {
 			},
 			$admin,
 			'delete'
+		);
+	}
+
+	/**
+	 * Member abilities, used by the club manager to sync members from tmclub.eu.
+	 */
+	private static function register_members() {
+		$s     = 'TMMT_Schemas';
+		$admin = array( 'TMMT_Auth', 'can_manage' );
+
+		self::add(
+			'list-members',
+			__( 'List members', 'tm-meeting-tools' ),
+			__( 'Lists the club members by name, with their Toastmasters ID, tmclub.eu user ID and when they were last synced.', 'tm-meeting-tools' ),
+			$s::input( array() ),
+			$s::obj( array( 'members' => $s::arr( $s::member() ) ) ),
+			static function () {
+				return array( 'members' => TMMT_Members::all() );
+			},
+			$admin,
+			'read'
+		);
+
+		self::add(
+			'sync-members',
+			__( 'Sync members', 'tm-meeting-tools' ),
+			__( 'Adds or updates members seen in a meeting on tmclub.eu and marks them as synced now. Matches by tm_id (the tmclub.eu user ID), else by name among members without one (which links them), else adds them. Members not synced for the days set in Settings are removed automatically.', 'tm-meeting-tools' ),
+			$s::input(
+				array(
+					'members' => $s::arr(
+						array(
+							'type'                 => 'object',
+							'additionalProperties' => false,
+							'properties'           => array(
+								'tm_id' => $s::str( 'tmclub.eu (easy-Speak) user ID.', 30 ),
+								'name'  => $s::str( 'Name as shown on the agenda.' ),
+							),
+							'required'             => array( 'tm_id', 'name' ),
+						)
+					),
+				),
+				array( 'members' )
+			),
+			$s::obj(
+				array(
+					'created' => array( 'type' => 'integer' ),
+					'updated' => array( 'type' => 'integer' ),
+					'members' => $s::arr( $s::member() ),
+				)
+			),
+			static function ( $input ) {
+				return TMMT_Members::sync( $input['members'] );
+			},
+			$admin
 		);
 	}
 }

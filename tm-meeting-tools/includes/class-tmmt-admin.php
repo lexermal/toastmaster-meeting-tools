@@ -19,7 +19,7 @@ class TMMT_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'notices' ) );
-		foreach ( array( 'save_settings', 'save_roles', 'add_role', 'delete_role' ) as $action ) {
+		foreach ( array( 'save_settings', 'save_retention', 'save_roles', 'add_role', 'delete_role' ) as $action ) {
 			add_action( 'admin_post_tmmt_' . $action, array( __CLASS__, 'handle_' . $action ) );
 		}
 	}
@@ -133,6 +133,23 @@ class TMMT_Admin {
 				<?php endif; ?>
 			</form>
 
+			<h2><?php esc_html_e( 'Automatic deletion', 'tm-meeting-tools' ); ?></h2>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="tmmt_save_retention">
+				<?php wp_nonce_field( 'tmmt_save_retention' ); ?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="tmmt-member-days"><?php esc_html_e( 'Delete members not seen in a meeting for', 'tm-meeting-tools' ); ?></label></th>
+						<td><input type="number" id="tmmt-member-days" name="member_inactive_days" min="1" step="1" class="small-text" value="<?php echo esc_attr( tmmt_member_inactive_days() ); ?>" required> <?php esc_html_e( 'days', 'tm-meeting-tools' ); ?></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="tmmt-feedback-days"><?php esc_html_e( 'Delete audience and evaluator feedback after', 'tm-meeting-tools' ); ?></label></th>
+						<td><input type="number" id="tmmt-feedback-days" name="feedback_keep_days" min="1" step="1" class="small-text" value="<?php echo esc_attr( tmmt_feedback_keep_days() ); ?>" required> <?php esc_html_e( 'days', 'tm-meeting-tools' ); ?></td>
+					</tr>
+				</table>
+				<?php submit_button( __( 'Save', 'tm-meeting-tools' ) ); ?>
+			</form>
+
 			<h2><?php esc_html_e( 'Agenda points', 'tm-meeting-tools' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Untick "Timed" for agenda points the timekeeper does not time (they then do not show in the timer). Drag the handle on the left to change the order, then save.', 'tm-meeting-tools' ); ?></p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -190,7 +207,7 @@ class TMMT_Admin {
 					<p class="description"><?php esc_html_e( 'The category tells the tools how to treat the agenda point:', 'tm-meeting-tools' ); ?></p>
 					<ul class="tmmt-cat-help">
 						<li><strong><?php esc_html_e( 'Speech', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'a prepared speech. Gets the "Give Feedback" button, shows in the audience feedback form and in the Speeches section, and its time can come from the speech type.', 'tm-meeting-tools' ); ?></li>
-						<li><strong><?php esc_html_e( 'Role', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'a meeting role such as Toastmaster, Evaluator or Timekeeper. Shown in the Intro or Feedback section, depending on where it is on the agenda.', 'tm-meeting-tools' ); ?></li>
+						<li><strong><?php esc_html_e( 'Role', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'a meeting role such as Toastmaster, Evaluator or Timekeeper. Shown in the Introduction or Feedback section, depending on where it is on the agenda.', 'tm-meeting-tools' ); ?></li>
 						<li><strong><?php esc_html_e( 'Table topic', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'the Table Topics Master and speakers. The timer adds new table topic speakers here.', 'tm-meeting-tools' ); ?></li>
 						<li><strong><?php esc_html_e( 'Break', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'a pause. Gets its own section on the agenda and needs no person.', 'tm-meeting-tools' ); ?></li>
 						<li><strong><?php esc_html_e( 'Other', 'tm-meeting-tools' ); ?>:</strong> <?php esc_html_e( 'anything else, such as Meet and Greet. Treated like a role.', 'tm-meeting-tools' ); ?></li>
@@ -252,6 +269,19 @@ class TMMT_Admin {
 		// Unticked checkboxes are not posted at all.
 		$out['timed'] = ! empty( $raw['timed'] );
 		return $out;
+	}
+
+	/**
+	 * Saves the automatic deletion periods (days).
+	 */
+	public static function handle_save_retention() {
+		self::guard( 'tmmt_save_retention' );
+		foreach ( array( 'member_inactive_days', 'feedback_keep_days' ) as $key ) {
+			if ( isset( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- checked in guard().
+				update_option( 'tmmt_' . $key, max( 1, absint( wp_unslash( $_POST[ $key ] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			}
+		}
+		self::back( admin_url( 'admin.php?page=tmmt-settings' ), __( 'Settings saved.', 'tm-meeting-tools' ) );
 	}
 
 	/**
