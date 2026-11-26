@@ -90,6 +90,7 @@ To update, upload the new zip the same way ("Replace current with uploaded"). Da
 | --- | --- | --- |
 | Meeting agenda and tools | `[tm_meeting]` or `[tm_meeting id="12"]` | The agenda plus tabs for the Timer, Ah-Counter and General Evaluator (after unlocking). |
 | Speech feedback form | `[tm_feedback_form]` | Only the anonymous audience form, which works well behind a QR code. |
+| – | `[tm_next_meeting]`, `[tm_next_meeting format="H:i" empty="soon"]` | The next meeting's date (default format `l j F`, e.g. "Monday 7 December") as plain text, for sentences such as a thank-you page. `empty` is shown when no meeting is planned. |
 | Meeting results (private) | `[tm_meeting_report]` | The results with meeting and person filters. It only renders for admins, or on a page protected with a WordPress page password. |
 
 Without an ID, the blocks show the next meeting, or the latest one if none is coming up. `?tm_meeting=ID` picks another meeting. You can link straight to a tab: `/meeting/#timer`, `#ah-counter`, `#feedback` (General Evaluator) or `#audience`.
@@ -120,9 +121,9 @@ Permission: *public* means anyone; *tools* means the tools cookie or an admin; *
 | `save-general-evaluation`, `list-general-evaluation` | tools | The General Evaluator's notes per meeting part. |
 | `submit-feedback` | public with the form nonce (audience); tools (evaluation) | Typed feedback. |
 | `list-feedback`, `delete-feedback`, `get-results` | admin | All feedback and results for a meeting and/or person. |
-
 | `list-members` | admin | Members with Toastmasters ID (tmclub.eu user ID) and when they were last synced. |
 | `sync-members` | admin | Add or update members from tmclub.eu (`{"members": [{"tm_id", "name"}]}`) and mark them as synced now. Matches by Toastmasters ID, then by name among members without one. |
+
 Example with WP-CLI:
 
 ```bash

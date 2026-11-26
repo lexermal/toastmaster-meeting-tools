@@ -52,6 +52,7 @@ class TMMT_Frontend {
 		add_shortcode( 'tm_meeting', array( __CLASS__, 'shortcode_meeting' ) );
 		add_shortcode( 'tm_feedback_form', array( __CLASS__, 'shortcode_audience' ) );
 		add_shortcode( 'tm_meeting_report', array( __CLASS__, 'shortcode_report' ) );
+		add_shortcode( 'tm_next_meeting', array( __CLASS__, 'shortcode_next_meeting' ) );
 	}
 
 	/**
@@ -208,6 +209,38 @@ class TMMT_Frontend {
 	 */
 	public static function shortcode_report() {
 		return self::render_report_block( array() );
+	}
+
+	/**
+	 * Shortcode [tm_next_meeting format="l j F" empty=""]: the date (and time) of the next meeting as
+	 * plain text, for use inside sentences such as a guest form's thank-you page.
+	 *
+	 * @param array|string $atts Attributes: format (PHP date format), empty (text when none is planned).
+	 * @return string
+	 */
+	public static function shortcode_next_meeting( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'format' => 'l j F',
+				'empty'  => '',
+			),
+			$atts,
+			'tm_next_meeting'
+		);
+		$upcoming = TMMT_Meetings::list_meetings(
+			array(
+				'when'  => 'upcoming',
+				'limit' => 5,
+			)
+		);
+		// "Upcoming" includes today's meeting; once it is over (marked completed) the next one is meant.
+		$upcoming = array_values( array_filter( $upcoming, fn( $m ) => 'completed' !== $m['status'] ) );
+		if ( ! $upcoming ) {
+			return esc_html( $atts['empty'] );
+		}
+		$meeting = $upcoming[0];
+		$moment  = date_create_immutable( $meeting['date'] . ' ' . ( $meeting['time'] ? $meeting['time'] : '00:00' ), wp_timezone() );
+		return esc_html( wp_date( $atts['format'], $moment->getTimestamp() ) );
 	}
 
 	/**
